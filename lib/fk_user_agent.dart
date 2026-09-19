@@ -2,6 +2,9 @@ import 'dart:async';
 
 import 'package:flutter/services.dart';
 
+import 'fk_user_agent_desktop_stub.dart'
+    if (dart.library.io) 'fk_user_agent_desktop.dart' as desktop;
+
 class FkUserAgent {
   static const MethodChannel _channel = MethodChannel('fk_user_agent');
 
@@ -13,9 +16,16 @@ class FkUserAgent {
   ///
   /// Set [force] to true if you want to refetch the user agent properties from
   /// the native platform.
-  static Future init({force: false}) async {
+  static Future init({bool force = false}) async {
     if (_properties == null || force) {
-      _properties = Map.unmodifiable(await (_channel.invokeMethod('getProperties')));
+      try {
+        _properties =
+            Map.unmodifiable(await (_channel.invokeMethod('getProperties')));
+      } on MissingPluginException {
+        // Desktop platforms have no native channel implementation, so the
+        // properties are generated from the operating system instead.
+        _properties = Map.unmodifiable(desktop.generateProperties());
+      }
     }
   }
 
